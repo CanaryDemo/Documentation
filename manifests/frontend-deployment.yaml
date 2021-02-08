@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colorapp-frontend
+  annotations:
+    linkerd.io/inject: enabled
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: colorapp
+    app.kubernetes.io/version: v2.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+      version: v2.0.0
+  template:
+    metadata:
+      annotations:
+        linkerd.io/inject: enabled
+      labels:
+        app: frontend
+        version: v2.0.0
+    spec:
+      containers:
+      - name: colorapp-frontend
+        image: quay.io/mariusdieckmann/colorapp-frontend:v2.0.5
+        ports:
+        - containerPort: 8000
+        env:
+          - name: backend_host
+            value: colorapp-backend
+          - name: backend_port
+            value: "8000"
+          - name: APIKey
+            valueFrom:
+              secretKeyRef:
+                name: apikey
+                key: APIKey
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: colorapp-frontend
+spec:
+  selector:
+    app: frontend
+    version: v2.0.0
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

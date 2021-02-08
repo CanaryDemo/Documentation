@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colorapp-backend
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: colorapp-backend
+        #image: nginx
+        image: quay.io/mariusdieckmann/colorapp-backend:v2.0.26
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "300m"
+          limits:
+            memory: "256Mi"
+            cpu: "300m"
+        ports:
+          - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health/startup
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        volumeMounts:
+          - name: configvol
+            mountPath: /config
+        env:
+          - name: APIKey
+            valueFrom:
+              secretKeyRef:
+                name: apikey
+                key: APIKey
+      volumes:
+        - name: configvol
+          configMap:
+            name: canarydemo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: colorapp-backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
